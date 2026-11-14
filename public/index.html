@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Taskboard – Task Management App</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f1f4fa;--surf:#fff;--ink:#14213d;--mute:#5d6a85;--line:#d8dfec;--acc:#2447e0;--onacc:#fff;--todo:#2447e0;--prog:#d98e00;--done:#14916a;--bad:#c93a3a;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1424;--surf:#172038;--ink:#e8edfb;--mute:#93a0bf;--line:#2a3555;--acc:#6f8cff;--onacc:#0e1424;--todo:#6f8cff;--prog:#f0b429;--done:#3dd6a3;--bad:#ff7a7a}}
+:root[data-theme="dark"]{--bg:#0e1424;--surf:#172038;--ink:#e8edfb;--mute:#93a0bf;--line:#2a3555;--acc:#6f8cff;--onacc:#0e1424;--todo:#6f8cff;--prog:#f0b429;--done:#3dd6a3;--bad:#ff7a7a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "DM Sans",system-ui,sans-serif}
+h1,h2,h3{font-family:"Bricolage Grotesque","DM Sans",sans-serif;margin:0;line-height:1.15}
+button,input,select,textarea{font:inherit;color:inherit}
+input,select,textarea{width:100%;padding:.6rem .75rem;border:1px solid var(--line);border-radius:8px;background:var(--surf)}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.btn{background:var(--acc);color:var(--onacc);border:0;border-radius:8px;padding:.6rem 1.1rem;font-weight:700;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.sm{padding:.3rem .6rem;font-size:.85rem}
+.wrap{max-width:1100px;margin:0 auto;padding:1rem}
+.auth{max-width:400px;margin:8vh auto 0;background:var(--surf);border:1px solid var(--line);border-radius:14px;padding:1.6rem}
+.auth h1{font-size:2rem;font-weight:800;margin-bottom:.3rem}
+.auth p{color:var(--mute);margin:.2rem 0 1rem}
+label{display:block;font-weight:500;font-size:.9rem;margin:.7rem 0 .25rem}
+.err{color:var(--bad);min-height:1.3em;font-size:.9rem;margin:.5rem 0}
+.link{background:none;border:0;color:var(--acc);cursor:pointer;padding:0;text-decoration:underline}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem}
+header.top h1{font-size:1.6rem;font-weight:800}
+.who{display:flex;gap:.5rem;align-items:center;color:var(--mute)}
+.panel{background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:1rem;margin-bottom:1rem}
+.grid{display:grid;gap:.75rem;grid-template-columns:2fr 1fr 1fr}
+.grid .full{grid-column:1/-1}
+.row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+.stats{display:flex;gap:1.2rem;color:var(--mute);font-size:.9rem;flex-wrap:wrap}
+.stats b{color:var(--ink)}
+.board{display:grid;gap:1rem;grid-template-columns:repeat(3,1fr);align-items:start}
+.col{background:var(--surf);border:1px solid var(--line);border-top:5px solid var(--c);border-radius:12px;padding:.8rem;min-height:140px}
+.col h2{font-size:1.05rem;display:flex;justify-content:space-between;margin-bottom:.6rem}
+.col h2 span{color:var(--mute);font-weight:600}
+.card{border:1px solid var(--line);border-left:4px solid var(--p);border-radius:8px;padding:.7rem;margin-bottom:.6rem;background:var(--bg)}
+.card h3{font-size:1rem;overflow-wrap:anywhere}
+.card p{margin:.25rem 0;color:var(--mute);font-size:.9rem;overflow-wrap:anywhere}
+.meta{font-size:.8rem;color:var(--mute);display:flex;gap:.7rem;flex-wrap:wrap;margin:.3rem 0 .5rem}
+.late{color:var(--bad);font-weight:700}
+.card .row select{width:auto;padding:.3rem .4rem;font-size:.85rem}
+.empty{color:var(--mute);font-size:.9rem;padding:.5rem 0}
+[hidden]{display:none!important}
+@media (max-width:820px){.board{grid-template-columns:1fr}.grid{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:no-preference){.card{animation:in .25s ease-out}@keyframes in{from{opacity:0;transform:translateY(4px)}}}
+</style>
+</head>
+<body>
+<main class="wrap">
+
+<section id="authView" class="auth" hidden>
+  <h1 id="authTitle">Sign in</h1>
+  <p id="authSub">Sign in to see your tasks.</p>
+  <div id="nameBox" hidden><label for="aName">Name</label><input id="aName" autocomplete="name"></div>
+  <label for="aEmail">Email</label><input id="aEmail" type="email" autocomplete="email">
+  <label for="aPass">Password (min 6 characters)</label><input id="aPass" type="password" autocomplete="current-password">
+  <div class="err" id="authErr" role="alert"></div>
+  <button class="btn" id="authBtn" style="width:100%">Sign in</button>
+  <p style="margin-top:1rem"><span id="swapTxt">New here?</span> <button class="link" id="swapBtn">Create an account</button></p>
+</section>
+
+<section id="appView" hidden>
+  <header class="top">
+    <h1>Taskboard</h1>
+    <div class="who"><span id="hello"></span><button class="btn ghost sm" id="themeBtn">Theme</button><button class="btn ghost sm" id="logout">Sign out</button></div>
+  </header>
+
+  <form class="panel" id="taskForm">
+    <h2 id="formTitle" style="font-size:1.1rem;margin-bottom:.4rem">Add a task</h2>
+    <div class="grid">
+      <div><label for="tTitle">Title</label><input id="tTitle" required maxlength="80"></div>
+      <div><label for="tPri">Priority</label><select id="tPri"><option value="high">High</option><option value="med" selected>Medium</option><option value="low">Low</option></select></div>
+      <div><label for="tDue">Due date</label><input id="tDue" type="date"></div>
+      <div class="full"><label for="tDesc">Details (optional)</label><textarea id="tDesc" rows="2" maxlength="300"></textarea></div>
+    </div>
+    <div class="row" style="margin-top:.8rem"><button class="btn" id="saveBtn">Add task</button><button type="button" class="btn ghost" id="cancelEdit" hidden>Cancel edit</button></div>
+  </form>
+
+  <div class="panel row" style="justify-content:space-between">
+    <div class="row" style="flex:1;min-width:220px">
+      <input id="q" type="search" placeholder="Search tasks" aria-label="Search tasks" style="flex:2;min-width:140px">
+      <select id="fPri" aria-label="Filter by priority" style="flex:1;min-width:120px"><option value="">All priorities</option><option value="high">High</option><option value="med">Medium</option><option value="low">Low</option></select>
+    </div>
+    <div class="stats" id="stats"></div>
+  </div>
+
+  <div class="board" id="board"></div>
+</section>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const tok={get(){try{return localStorage.getItem('tb_token')}catch(e){return null}},set(v){try{v?localStorage.setItem('tb_token',v):localStorage.removeItem('tb_token')}catch(e){}}};
+async function api(p,m='GET',b){
+  const r=await fetch('/api'+p,{method:m,headers:{'Content-Type':'application/json',...(tok.get()?{Authorization:'Bearer '+tok.get()}:{})},body:b?JSON.stringify(b):undefined});
+  let d={};try{d=await r.json()}catch(e){}
+  if(!r.ok){if(r.status===401&&tok.get()){tok.set(null);showAuth()}throw new Error(d.error||'Something went wrong. Try again.')}
+  return d;
+}
+let mode='login',user=null,editId=null,tasks=[];
+const STAT=[['todo','To do','var(--todo)'],['prog','In progress','var(--prog)'],['done','Done','var(--done)']];
+const PRI={high:'var(--bad)',med:'var(--prog)',low:'var(--done)'};
+
+function showAuth(){$('appView').hidden=true;$('authView').hidden=false;setMode(mode)}
+function setMode(m){mode=m;const r=m==='register';
+  $('authTitle').textContent=r?'Create account':'Sign in';
+  $('authSub').textContent=r?'Your tasks stay private to your account.':'Sign in to see your tasks.';
+  $('nameBox').hidden=!r;$('authBtn').textContent=r?'Create account':'Sign in';
+  $('swapTxt').textContent=r?'Already registered?':'New here?';$('swapBtn').textContent=r?'Sign in':'Create an account';$('authErr').textContent='';}
+$('swapBtn').onclick=()=>setMode(mode==='login'?'register':'login');
+$('authBtn').onclick=async()=>{
+  const email=$('aEmail').value.trim(),password=$('aPass').value,name=$('aName').value.trim();
+  const err=t=>$('authErr').textContent=t;
+  if(!/^\S+@\S+\.\S+$/.test(email))return err('Enter a valid email address.');
+  if(password.length<6)return err('Password must be at least 6 characters.');
+  if(mode==='register'&&!name)return err('Enter your name.');
+  $('authBtn').disabled=true;
+  try{const d=await api('/auth/'+mode,'POST',{name,email,password});tok.set(d.token);await enter(d.user)}
+  catch(e){err(e.message)}
+  $('authBtn').disabled=false;
+};
+async function enter(u){
+  user=u;$('aPass').value='';$('authView').hidden=true;$('appView').hidden=false;
+  $('hello').textContent='Hi, '+u.name;resetForm();
+  try{tasks=await api('/tasks')}catch(e){tasks=[]}
+  render();
+}
+$('logout').onclick=()=>{tok.set(null);user=null;tasks=[];showAuth()};
+
+$('taskForm').onsubmit=async e=>{
+  e.preventDefault();
+  const f={title:$('tTitle').value.trim(),pri:$('tPri').value,due:$('tDue').value,desc:$('tDesc').value.trim()};
+  if(!f.title)return;
+  try{
+    if(editId){const t=await api('/tasks/'+editId,'PUT',f);tasks=tasks.map(x=>x.id===editId?t:x)}
+    else tasks.unshift(await api('/tasks','POST',f));
+    resetForm();render();
+  }catch(er){alert(er.message)}
+};
+function resetForm(){editId=null;$('taskForm').reset();$('tPri').value='med';$('formTitle').textContent='Add a task';$('saveBtn').textContent='Add task';$('cancelEdit').hidden=true}
+$('cancelEdit').onclick=resetForm;
+['q','fPri'].forEach(i=>$(i).addEventListener('input',()=>render()));
+
+function render(){
+  const q=$('q').value.toLowerCase(),fp=$('fPri').value,all=tasks,today=new Date().toISOString().slice(0,10);
+  const list=all.filter(t=>(!fp||t.pri===fp)&&(!q||(t.title+' '+t.desc).toLowerCase().includes(q)));
+  const n=s=>all.filter(t=>t.status===s).length;
+  $('stats').innerHTML=`<span><b>${all.length}</b> total</span><span><b>${n('done')}</b> done</span><span><b>${all.filter(t=>t.status!=='done'&&t.due&&t.due<today).length}</b> overdue</span>`;
+  $('board').innerHTML=STAT.map(([k,label,c])=>{
+    const items=list.filter(t=>t.status===k).sort((a,b)=>(a.due||'9')>(b.due||'9')?1:-1);
+    return `<section class="col" style="--c:${c}"><h2>${label}<span>${items.length}</span></h2>`+
+      (items.length?items.map(t=>{
+        const late=t.status!=='done'&&t.due&&t.due<today;
+        return `<article class="card" style="--p:${PRI[t.pri]}"><h3>${esc(t.title)}</h3>${t.desc?`<p>${esc(t.desc)}</p>`:''}
+        <div class="meta"><span>${{high:'High',med:'Medium',low:'Low'}[t.pri]} priority</span>${t.due?`<span class="${late?'late':''}">${late?'Overdue: ':'Due '}${t.due}</span>`:''}</div>
+        <div class="row"><select data-s="${t.id}" aria-label="Move task">${STAT.map(([v,l])=>`<option value="${v}"${v===t.status?' selected':''}>${l}</option>`).join('')}</select>
+        <button class="btn ghost sm" data-e="${t.id}">Edit</button><button class="btn ghost sm" data-d="${t.id}">Delete</button></div></article>`}).join('')
+      :`<div class="empty">${all.length?'No matching tasks here.':k==='todo'?'No tasks yet. Add your first one above.':'Nothing here yet.'}</div>`)+`</section>`;
+  }).join('');
+}
+$('board').addEventListener('change',async e=>{
+  const id=e.target.dataset.s;if(!id)return;
+  try{const t=await api('/tasks/'+id,'PUT',{status:e.target.value});tasks=tasks.map(x=>x.id===id?t:x)}catch(er){alert(er.message)}
+  render();
+});
+$('board').addEventListener('click',async e=>{
+  const d=e.target.dataset.d,ed=e.target.dataset.e;
+  if(d&&confirm('Delete this task?')){try{await api('/tasks/'+d,'DELETE');tasks=tasks.filter(t=>t.id!==d);render()}catch(er){alert(er.message)}}
+  if(ed){const t=tasks.find(t=>t.id===ed);if(!t)return;editId=ed;$('tTitle').value=t.title;$('tPri').value=t.pri;$('tDue').value=t.due||'';$('tDesc').value=t.desc||'';
+    $('formTitle').textContent='Edit task';$('saveBtn').textContent='Save changes';$('cancelEdit').hidden=false;$('tTitle').focus();window.scrollTo({top:0,behavior:'smooth'})}
+});
+$('themeBtn').onclick=()=>{const r=document.documentElement,dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;r.dataset.theme=dark?'light':'dark'};
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&!$('authView').hidden&&e.target.tagName==='INPUT')$('authBtn').click()});
+
+(async()=>{
+  if(!tok.get())return showAuth();
+  try{await enter(await api('/auth/me'))}catch(e){showAuth()}
+})();
+</script>
+</body>
+</html>
